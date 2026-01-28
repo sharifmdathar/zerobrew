@@ -241,14 +241,14 @@ fn add_to_path(prefix: &Path) -> Result<(), String> {
 
         if write_result.is_err() {
             println!(
-                "    {} Could not write to {} due to error: {},",
-                style("⚠").yellow(),
+                "{} Could not write to {} due to error: {}",
+                style("Warning:").yellow().bold(),
                 config_file,
                 write_result.err().unwrap()
             );
             println!(
-                "    {} Please add the following to {}:",
-                style("→").cyan(),
+                "{} Please add the following line to {}:",
+                style("Info:").cyan().bold(),
                 config_file
             );
             println!("{}", addition);
