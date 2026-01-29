@@ -1,5 +1,3 @@
-# vim: set ft=make :
-
 set export
 set dotenv-load
 set script-interpreter := ['bash', '-euo', 'pipefail']
