@@ -272,19 +272,17 @@ fn patch_elf_placeholders(keg_path: &Path, prefix_dir: &Path) -> Result<(), Erro
             }
             fs::rename(temp_path, path)?;
 
+            // Restore original permissions (including execute bit) after atomic write
+            let mut perms = metadata.permissions();
+            perms.set_mode(original_mode);
+            fs::set_permissions(path, perms)?;
+
             Ok(())
         })();
 
         if let Err(e) = result {
             eprintln!("Warning: Failed to patch ELF at {}: {}", path.display(), e);
             patch_failures.fetch_add(1, Ordering::Relaxed);
-        }
-
-        // Restore permissions
-        if is_readonly {
-            let mut perms = metadata.permissions();
-            perms.set_mode(original_mode);
-            let _ = fs::set_permissions(path, perms);
         }
     });
 
@@ -457,11 +455,23 @@ mod tests {
             }
         };
 
+        // Record original permissions (should include execute bit from cc)
+        let original_mode = fs::metadata(&elf_path).unwrap().permissions().mode();
+        assert!(
+            original_mode & 0o111 != 0,
+            "compiled binary should be executable"
+        );
+
         let result = patch_placeholders(&pkg_dir, &prefix, "testpkg", "1.0.0");
         assert!(result.is_ok());
 
-        // Basic check that file is still intact
-        assert!(fs::metadata(&elf_path).is_ok());
+        // Verify permissions are preserved after patching
+        let new_mode = fs::metadata(&elf_path).unwrap().permissions().mode();
+        assert_eq!(
+            original_mode & 0o777,
+            new_mode & 0o777,
+            "permissions should be preserved after patching"
+        );
     }
 
     #[test]
