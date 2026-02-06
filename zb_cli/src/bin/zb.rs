@@ -1,5 +1,7 @@
 use clap::Parser;
 use console::style;
+use std::env;
+use std::ffi::OsString;
 use zb_cli::{
     cli::{Cli, Commands},
     commands,
@@ -10,7 +12,26 @@ use zb_io::create_installer;
 
 #[tokio::main]
 async fn main() {
-    let cli = Cli::parse();
+    let args: Vec<OsString> = {
+        let mut args: Vec<OsString> = env::args_os().collect();
+        if let Some(first_arg) = args.get_mut(1) {
+            match first_arg.to_str() {
+                Some("i") => *first_arg = OsString::from("install"),
+                Some("b") => *first_arg = OsString::from("bundle"),
+                Some("u") => *first_arg = OsString::from("uninstall"),
+                Some("m") => *first_arg = OsString::from("migrate"),
+                Some("ls") => *first_arg = OsString::from("list"),
+                Some("g") => *first_arg = OsString::from("gc"),
+                Some("r") => *first_arg = OsString::from("reset"),
+                Some("c") => *first_arg = OsString::from("completion"),
+                Some("x") => *first_arg = OsString::from("run"),
+                _ => {}
+            }
+        }
+        args
+    };
+
+    let cli = Cli::parse_from(args);
 
     if let Err(e) = run(cli).await {
         eprintln!("{} {}", style("error:").red().bold(), e);
